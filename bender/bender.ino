@@ -5,7 +5,7 @@
 Servo topServo;  // create servo object to control a servo
 const int TOP_SERVO_PIN = 9;
 const int TOP_SERVO_LEVEL_ANGLE = 140;
-const int TOP_SERVO_POUR_MAX_ANGLE = 30;
+const int TOP_SERVO_POUR_MAX_ANGLE = 20;
 int topServoPosition = TOP_SERVO_LEVEL_ANGLE;
 
 // bottomServo (rotates boom)
@@ -20,7 +20,6 @@ const int END_LED_PIN = 8;
 
 // buzzer
 const int BUZZER_PIN = 11;
-
 
 // screen
 const int LCD_RS = 12;
@@ -55,10 +54,12 @@ void setup() {
   Serial.println("Set to initial position");
 }
 
-int moveTo(Servo servo, int currentPosition, int desiredPosition, int rate) {
+int moveTo(Servo servo, int currentPosition, int desiredPosition, int rate, int delayRate) {
   Serial.println("===========");
   Serial.println(currentPosition);
   Serial.println(desiredPosition);
+  Serial.println(rate);
+  Serial.println(delayRate);
   Serial.println("===========");
   if (currentPosition < desiredPosition) {
     Serial.println("current less than");
@@ -66,7 +67,7 @@ int moveTo(Servo servo, int currentPosition, int desiredPosition, int rate) {
       Serial.println(currentPosition);
       servo.write(currentPosition);
       currentPosition = currentPosition + rate;
-      delay(30);
+      delay(delayRate);
     }
   }
   else if (currentPosition > desiredPosition) {
@@ -75,15 +76,16 @@ int moveTo(Servo servo, int currentPosition, int desiredPosition, int rate) {
       Serial.println(currentPosition);
       servo.write(currentPosition);
       currentPosition = currentPosition - rate;
-      delay(30);
+      delay(delayRate);
     }
   }
   return currentPosition;
 }
 
 void marioSound() {
+//  return;
   float sounds[4] = {835.2, 835.2, 835.2, 1110.0};
-  for(int i = 0; i < sizeof(sounds); i++) {
+  for(int i = 0; i < 4; i++) {
     tone(BUZZER_PIN, sounds[i]);
     digitalWrite(END_LED_PIN, HIGH);
     delay(500);
@@ -91,7 +93,6 @@ void marioSound() {
     digitalWrite(END_LED_PIN, LOW);
     delay(500);
   }
-  delay(500);
 }
 
 void printToBanner(char text[]) {
@@ -106,7 +107,7 @@ void beerCountdown(int drinkingTime) {
   for( int i = 3; i > 0; i-- ){
       LCD.setCursor(0, 1);
       LCD.print(i);
-      delay(1000);
+      delay(2000);
    }
    printToBanner("BEER TIME");
 }
@@ -117,14 +118,16 @@ void pourBeer() {
   marioSound();
   digitalWrite(END_LED_PIN, HIGH);
   printToBanner("DISPENSING BEER");
-  bottomServoPosition = moveTo(bottomServo, bottomServoPosition, BOTTOM_SERVO_DRINKING_POSITION, 2);
+  bottomServoPosition = moveTo(bottomServo, bottomServoPosition, BOTTOM_SERVO_DRINKING_POSITION, 2, 30);
   tone(BUZZER_PIN, 1000);
-  topServoPosition = moveTo(topServo, topServoPosition, (TOP_SERVO_POUR_MAX_ANGLE - TOP_SERVO_LEVEL_ANGLE) * .85 + TOP_SERVO_LEVEL_ANGLE, 1);
+
+  topServoPosition = moveTo(topServo, topServoPosition, (TOP_SERVO_POUR_MAX_ANGLE - TOP_SERVO_LEVEL_ANGLE) * .85 + TOP_SERVO_LEVEL_ANGLE, 1, 85);
   noTone(BUZZER_PIN);
+  delay(1000);
 
   printToBanner("BEER DISPENSED");
-  topServoPosition = moveTo(topServo, topServoPosition, TOP_SERVO_LEVEL_ANGLE, 2);
-  bottomServoPosition = moveTo(bottomServo, bottomServoPosition, BOTTOM_SERVO_READY_POSITION, 1);
+  topServoPosition = moveTo(topServo, topServoPosition, TOP_SERVO_LEVEL_ANGLE, 2, 30);
+  bottomServoPosition = moveTo(bottomServo, bottomServoPosition, BOTTOM_SERVO_READY_POSITION, 1, 30);
   digitalWrite(END_LED_PIN, LOW);
 }
 
