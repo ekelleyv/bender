@@ -15,10 +15,16 @@ const int BOTTOM_SERVO_DRINKING_POSITION = 150;
 const int BOTTOM_SERVO_READY_POSITION = 40;
 int bottomServoPosition = BOTTOM_SERVO_READY_POSITION;
 
+// lights
+const int END_LED_PIN = 8;
+
+// buzzer
+const int BUZZER_PIN = 11;
+
 
 // screen
 const int LCD_RS = 12;
-const int LCD_ENABLE = 11;
+const int LCD_ENABLE = 13;
 const int LCD_D4 = 5;
 const int LCD_D5 = 4;
 const int LCD_D6 = 3;
@@ -36,7 +42,10 @@ void setup() {
   Serial.begin(9600);
 
   pinMode(BUTTON_PIN, INPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
 
+  digitalWrite(END_LED_PIN, HIGH);
+  
   // init positions
   printToBanner("PRESS FOR BEER");
   Serial.println("Setting servo to initial position");
@@ -44,15 +53,13 @@ void setup() {
   bottomServo.write(BOTTOM_SERVO_READY_POSITION);
   delay(1000);
   Serial.println("Set to initial position");
-
 }
 
-int moveTo(Servo servo, int currentPosition, int desiredPosition) {
+int moveTo(Servo servo, int currentPosition, int desiredPosition, int rate) {
   Serial.println("===========");
   Serial.println(currentPosition);
   Serial.println(desiredPosition);
   Serial.println("===========");
-  int rate = 1;
   if (currentPosition < desiredPosition) {
     Serial.println("current less than");
     while (currentPosition < desiredPosition) {
@@ -74,6 +81,19 @@ int moveTo(Servo servo, int currentPosition, int desiredPosition) {
   return currentPosition;
 }
 
+void marioSound() {
+  float sounds[4] = {835.2, 835.2, 835.2, 1110.0};
+  for(int i = 0; i < sizeof(sounds); i++) {
+    tone(BUZZER_PIN, sounds[i]);
+    digitalWrite(END_LED_PIN, HIGH);
+    delay(500);
+    noTone(BUZZER_PIN);
+    digitalWrite(END_LED_PIN, LOW);
+    delay(500);
+  }
+  delay(500);
+}
+
 void printToBanner(char text[]) {
   LCD.begin(16, 2);
   LCD.print(text);
@@ -93,21 +113,25 @@ void beerCountdown(int drinkingTime) {
 
 void pourBeer() {
   // Set to max pour
-  // init
+  // light on
+  marioSound();
+  digitalWrite(END_LED_PIN, HIGH);
   printToBanner("DISPENSING BEER");
-  bottomServoPosition = moveTo(bottomServo, bottomServoPosition, BOTTOM_SERVO_DRINKING_POSITION);
-  topServoPosition = moveTo(topServo, topServoPosition, (TOP_SERVO_POUR_MAX_ANGLE - TOP_SERVO_LEVEL_ANGLE) * 0.75 + TOP_SERVO_LEVEL_ANGLE);
+  bottomServoPosition = moveTo(bottomServo, bottomServoPosition, BOTTOM_SERVO_DRINKING_POSITION, 2);
+  tone(BUZZER_PIN, 1000);
+  topServoPosition = moveTo(topServo, topServoPosition, (TOP_SERVO_POUR_MAX_ANGLE - TOP_SERVO_LEVEL_ANGLE) * .85 + TOP_SERVO_LEVEL_ANGLE, 1);
+  noTone(BUZZER_PIN);
 
   printToBanner("BEER DISPENSED");
-  topServoPosition = moveTo(topServo, topServoPosition, TOP_SERVO_LEVEL_ANGLE);
-  bottomServoPosition = moveTo(bottomServo, bottomServoPosition, BOTTOM_SERVO_READY_POSITION);
+  topServoPosition = moveTo(topServo, topServoPosition, TOP_SERVO_LEVEL_ANGLE, 2);
+  bottomServoPosition = moveTo(bottomServo, bottomServoPosition, BOTTOM_SERVO_READY_POSITION, 1);
+  digitalWrite(END_LED_PIN, LOW);
 }
 
 void loop() {
   buttonState = digitalRead(BUTTON_PIN);
   if (buttonState == HIGH) {
     pourBeer();
-    delay(1000);
     printToBanner("YUM");
     delay(1000);
     printToBanner("PRESS FOR BEER");
